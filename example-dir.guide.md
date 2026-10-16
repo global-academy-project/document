@@ -1,3 +1,6 @@
+# Example Document Directory Role
+
+```md
 docs/
 ├─ README.md
 ├─ CONTRIBUTING.md
@@ -46,3 +49,4 @@ docs/
 │  └─ legacy-notes/
 └─ .github/
    └─ workflows/
+```
