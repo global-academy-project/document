@@ -4,10 +4,10 @@
 
 * **Dev Date :** 10/17/2026 ~ 10/24/2026 23:59:59
 * **Member :**
-  - 김영민 : 
-  - 김효준
-  - 승진
-  - 최건우
+  - 김영민 : Backend (``) 
+  - 승진 : Frontend (``)
+  - 최건우 : Infra, Frontend, Backend
+  - 최민기 : Backend (`OCR`)
 
 ### Objective
 
@@ -31,6 +31,9 @@ OpenAI API를 통해 PDF 파일의 이미지에서 텍스트 (Image-Text-to-Text
 
 > [!NOTE]
 > **현재 기술 스택 적용 범위와 개발 환경 구축은 사전 교육 기간 중 진행한 버전으로 고정하여 일관된 서비스를 개발하는 것으로 논의중**
+
+## 2.2 
+
 
 ---
 
