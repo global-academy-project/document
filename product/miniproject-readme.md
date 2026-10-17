@@ -2,12 +2,21 @@
 
 ### Information
 
-### Overview 
+* **Dev Date :** 10/17/2026 ~ 10/24/2026 23:59:59
+* **Member :**
+  - 김영민 : 
+  - 김효준
+  - 승진
+  - 최건우
+
+### Objective
+
+OpenAI API를 통해 PDF 파일의 이미지에서 텍스트 (Image-Text-to-Text)을 추출하여 결과 데이터통해 UI에 출력되도록 하는 방식 설계를 진행하고 AI Agent의 Parameter Size가 1B (100,000,000) 와 14B (1,400,000,000) 두 개의 모델을 선정하여 구성 가능한 환경에서 병목 현상이 일어나는지 테스트를 진행해 정확도가 높은 Application을 구축한다.
 
 # 2. Project Feature Requirement
 
 <div align="center">
-    <img width="40%" alt="" src="../document/img/miniproject-requirement.jpg">
+    <img width="40%" alt="" src="./img/miniproject-requirement.jpg">
 </div>
 
 ## 2.1 Applied Skill Stacks
@@ -20,9 +29,8 @@
 | **Infra & Delivery**      | Docker (v4.93.0), Kubernetes (v1.36.1)                |
 | **Website Type**          | Dynamic Website (React with Vite)                     |
 
-> [!IMPORTANT]
+> [!NOTE]
 > **현재 기술 스택 적용 범위와 개발 환경 구축은 사전 교육 기간 중 진행한 버전으로 고정하여 일관된 서비스를 개발하는 것으로 논의중**
-
 
 ---
 
