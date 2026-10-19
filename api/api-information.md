@@ -8,23 +8,23 @@
 
 | #   | Method | Path                                                        | 설명                 | 인증  | 성공  | 타입        | 요청                                    | 응답                                                                        | 담당  | 현황  |
 | --- | ------ | ----------------------------------------------------------- | ------------------ | --- | --- | --------- | ------------------------------------- | ------------------------------------------------------------------------- | --- | --- |
-| 1   | POST   | `/api/auth/signup`                                          | 회원가입               | X   | 201 | json      | email, password, name                 | userId, email, name, createdAt                                            |     | 예정  |
-| 2   | POST   | `/api/auth/login`                                           | 로그인(JWT 발급)        | X   | 200 | json      | email, password                       | accessToken, tokenType, expiresIn, user                                   |     | 예정  |
-| 3   | GET    | `/api/users/me`                                             | 내 정보               | O   | 200 | -         | -                                     | userId, email, name, createdAt                                            |     | 예정  |
-| 4   | GET    | `/api/engines`                                              | 현재 망 모드 / 사용 가능 엔진 | O   | 200 | -         | -                                     | networkMode, defaultEngine, engines[]                                     |     | 예정  |
-| 5   | POST   | `/api/documents`                                            | PDF 업로드 + OCR 요청   | O   | 202 | multipart | file, engine?, extractImages?         | documentId, runId, status, engine, networkMode                            |     | 예정  |
-| 6   | GET    | `/api/documents`                                            | 내 문서 목록 (페이징)      | O   | 200 | query     | page?, size?, sort?, status?          | content[], page, size, totalElements, totalPages, hasNext                 |     | 예정  |
-| 7   | GET    | `/api/documents/{documentId}`                               | 문서 상세 + 최신 OCR 결과  | O   | 200 | -         | -                                     | 문서 정보, latestRun(RunDetail)                                               |     | 예정  |
-| 8   | DELETE | `/api/documents/{documentId}`                               | 문서 삭제              | O   | 200 | -         | -                                     | null                                                                      |     | 예정  |
-| 9   | GET    | `/api/documents/{documentId}/file`                          | 원본 PDF             | O   | 200 | -         | -                                     | PDF(바이너리)                                                                 |     | 예정  |
-| 10  | GET    | `/api/documents/{documentId}/runs`                          | OCR 실행 이력          | O   | 200 | -         | -                                     | RunSummary[]                                                              |     | 예정  |
-| 11  | GET    | `/api/documents/{documentId}/runs/{runId}`                  | 특정 실행 상세           | O   | 200 | -         | -                                     | RunDetail                                                                 |     | 예정  |
-| 12  | POST   | `/api/documents/{documentId}/reprocess`                     | 다른 엔진으로 재처리        | O   | 202 | json      | engine, extractImages?                | documentId, runId, status, engine, networkMode                            |     | 예정  |
-| 13  | GET    | `/api/documents/{documentId}/runs/{runId}/export`           | 결과 내보내기            | O   | 200 | query     | format(txt\|json)                     | 파일(txt/json)                                                              |     | 예정  |
-| 14  | GET    | `/api/documents/{documentId}/runs/{runId}/images/{imageId}` | 추출 이미지             | O   | 200 | -         | -                                     | PNG(바이너리)                                                                 |     | 예정  |
+| 1   | POST   | `/api/v1/auth/signup`                                          | 회원가입               | X   | 201 | json      | email, password, name                 | userId, email, name, createdAt                                            |     | 완료  |
+| 2   | POST   | `/api/v1/auth/login`                                           | 로그인(JWT 발급)        | X   | 200 | json      | email, password                       | accessToken, tokenType, expiresIn, user                                   |     | 완료  |
+| 3   | GET    | `/api/v1/users/me`                                             | 내 정보               | O   | 200 | -         | -                                     | userId, email, name, createdAt                                            |     | 완료  |
+| 4   | GET    | `/api/v1/engines`                                              | 현재 망 모드 / 사용 가능 엔진 | O   | 200 | -         | -                                     | networkMode, defaultEngine, engines[]                                     |     | 예정  |
+| 5   | POST   | `/api/v1/documents`                                            | PDF 업로드 + OCR 요청   | O   | 202 | multipart | file, engine?, extractImages?         | documentId, runId, status, engine, networkMode                            |     | 예정  |
+| 6   | GET    | `/api/v1/documents`                                            | 내 문서 목록 (페이징)      | O   | 200 | query     | page?, size?, sort?, status?          | content[], page, size, totalElements, totalPages, hasNext                 |     | 예정  |
+| 7   | GET    | `/api/v1/documents/{documentId}`                               | 문서 상세 + 최신 OCR 결과  | O   | 200 | -         | -                                     | 문서 정보, latestRun(RunDetail)                                               |     | 예정  |
+| 8   | DELETE | `/api/v1/documents/{documentId}`                               | 문서 삭제              | O   | 200 | -         | -                                     | null                                                                      |     | 예정  |
+| 9   | GET    | `/api/v1/documents/{documentId}/file`                          | 원본 PDF             | O   | 200 | -         | -                                     | PDF(바이너리)                                                                 |     | 예정  |
+| 10  | GET    | `/api/v1/documents/{documentId}/runs`                          | OCR 실행 이력          | O   | 200 | -         | -                                     | RunSummary[]                                                              |     | 예정  |
+| 11  | GET    | `/api/v1/documents/{documentId}/runs/{runId}`                  | 특정 실행 상세           | O   | 200 | -         | -                                     | RunDetail                                                                 |     | 예정  |
+| 12  | POST   | `/api/v1/documents/{documentId}/reprocess`                     | 다른 엔진으로 재처리        | O   | 202 | json      | engine, extractImages?                | documentId, runId, status, engine, networkMode                            |     | 예정  |
+| 13  | GET    | `/api/v1/documents/{documentId}/runs/{runId}/export`           | 결과 내보내기            | O   | 200 | query     | format(txt\|json)                     | 파일(txt/json)                                                              |     | 예정  |
+| 14  | GET    | `/api/v1/documents/{documentId}/runs/{runId}/images/{imageId}` | 추출 이미지             | O   | 200 | -         | -                                     | PNG(바이너리)                                                                 |     | 예정  |
 | F1  | GET    | `/health`                                                   | 헬스체크               | -   | 200 | -         | -                                     | status                                                                    |     | 예정  |
-| F2  | GET    | `/ocr/engines`                                              | 망 모드 / 엔진 목록       | -   | 200 | -         | -                                     | networkMode, defaultEngine, engines[]                                     |     | 예정  |
-| F3  | POST   | `/ocr/extract`                                              | PDF에서 텍스트/이미지 추출   | -   | 200 | multipart | file, engine?, extract_images?, lang? | engine, networkMode, pageCount, totalMs, avgConfidence, pages[], images[] |     | 예정  |
+| F2  | GET    | `/ocr/v1/engines`                                              | 망 모드 / 엔진 목록       | -   | 200 | -         | -                                     | networkMode, defaultEngine, engines[]                                     |     | 예정  |
+| F3  | POST   | `/ocr/v1/extract`                                              | PDF에서 텍스트/이미지 추출   | -   | 200 | multipart | file, engine?, extract_images?, lang? | engine, networkMode, pageCount, totalMs, avgConfidence, pages[], images[] |     | 예정  |
 
 ### 1.1 미결 사항 / 합의 체크리스트
 
@@ -90,7 +90,7 @@ React                          인증, 업로드, DB 저장                     
 |만료|3600초 (1시간)|
 |Claims|`sub`=userId, `email`, `iat`, `exp`|
 |갱신|없음 (만료 시 재로그인)|
-|인증 제외 경로|`/api/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`|
+|인증 제외 경로|`/api/v1/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`|
 
 - 토큰이 없거나 형식이 잘못되면 `401 UNAUTHORIZED`
 - 만료된 토큰이면 `401 TOKEN_EXPIRED` (프론트는 이 코드로 로그인 화면 이동)
@@ -156,7 +156,7 @@ React                          인증, 업로드, DB 저장                     
 |---|---|
 |형식|PDF만 (확장자 `.pdf` **그리고** 파일 시작 바이트 `%PDF` 모두 검증)|
 |최대 크기|20MB (multipart 전체 25MB)|
-|최대 페이지|50페이지 (FastAPI가 검증)|
+|최대 페이지|50페이지 (Spring이 업로드 시 1차 검증, FastAPI가 처리 시 2차 검증)|
 |저장 파일명|서버가 UUID로 저장, 원본 파일명은 DB(`original_name`)에만 보관|
 
 ### 3.7 타임아웃
@@ -257,8 +257,8 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 |시점|방식|예|
 |---|---|---|
-|**업로드 요청 중** (Spring이 즉시 판단 가능)|HTTP 4xx/5xx 응답|파일 형식, 크기, 엔진 허용 여부, 인증|
-|**업로드 이후 OCR 처리 중** (FastAPI 구간)|요청은 이미 202로 끝남 → run `status=FAILED` + `errorMessage`|페이지 초과, 엔진 오류, 타임아웃|
+|**업로드 요청 중** (Spring이 즉시 판단 가능)|HTTP 4xx/5xx 응답|파일 형식, 크기, **50페이지 초과(`400 INVALID_REQUEST`)**, 엔진 허용 여부, 인증|
+|**업로드 이후 OCR 처리 중** (FastAPI 구간)|요청은 이미 202로 끝남 → run `status=FAILED` + `errorMessage`|엔진 오류, 타임아웃, (Spring을 통과한) 페이지 초과|
 
 프론트는 폴링으로 `FAILED`를 확인하고 `latestRun.errorMessage`를 표시한다.
 
@@ -268,7 +268,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 ### 6.1 회원가입
 
-`POST /api/auth/signup` · 인증 불필요 · 성공 `201`
+`POST /api/v1/auth/signup` · 인증 불필요 · 성공 `201`
 
 **Request Body**
 
@@ -306,7 +306,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 ### 6.2 로그인
 
-`POST /api/auth/login` · 인증 불필요 · 성공 `200`
+`POST /api/v1/auth/login` · 인증 불필요 · 성공 `200`
 
 **Request Body**
 
@@ -342,7 +342,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 ### 6.3 내 정보
 
-`GET /api/users/me` · 인증 필요 · 성공 `200`
+`GET /api/v1/users/me` · 인증 필요 · 성공 `200`
 
 **Response `200`**: `userId`, `email`, `name`, `createdAt`
 
@@ -356,7 +356,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 ### 6.4 엔진 목록 / 망 모드
 
-`GET /api/engines` · 인증 필요 · 성공 `200`
+`GET /api/v1/engines` · 인증 필요 · 성공 `200`
 
 프론트의 엔진 선택 드롭다운과 망 모드 배지 표시에 사용한다. Spring이 FastAPI `GET /ocr/engines`를 호출해 전달하며 **30초 캐시**한다.
 
@@ -396,7 +396,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
 
 ### 6.5 문서 업로드 + OCR 요청
 
-`POST /api/documents` · 인증 필요 · 성공 `202 Accepted`
+`POST /api/v1/documents` · 인증 필요 · 성공 `202 Accepted`
 
 OCR은 오래 걸릴 수 있으므로 **즉시 응답하고 비동기로 처리**한다. 결과는 §6.7을 폴링해 확인한다.
 
@@ -410,7 +410,7 @@ OCR은 오래 걸릴 수 있으므로 **즉시 응답하고 비동기로 처리*
 
 **Spring 처리 순서**
 
-1. 인증 확인 → 파일 존재/크기/PDF 매직바이트 검증
+1. 인증 확인 → 파일 존재/크기/PDF 매직바이트/페이지 수(≤50) 검증, 페이지 수 확정
 2. `engine` 검증 (enum 값, 현재 망 모드에서 사용 가능한지 — 엔진 캐시 기준)
 3. 파일 저장 → `documents` 저장 (`UPLOADED`)
 4. `ocr_runs` 생성 (`PROCESSING`, 망 모드는 엔진 정보 캐시 값) → 문서 상태 `PROCESSING`
@@ -470,7 +470,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.6 문서 목록
 
-`GET /api/documents` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents` · 인증 필요 · 성공 `200`
 
 **Query**
 
@@ -488,7 +488,7 @@ curl -X POST http://localhost:8080/api/documents \
 |`documentId`|number||
 |`originalName`|string||
 |`fileSize`|number||
-|`pageCount`|number \| null|처리 완료 전에는 `null`|
+|`pageCount`|number|업로드 시점에 확정됨|
 |`status`|string|DocumentStatus|
 |`latestRunId`|number||
 |`latestEngine`|string||
@@ -517,7 +517,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.7 문서 상세 + 최신 결과
 
-`GET /api/documents/{documentId}` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}` · 인증 필요 · 성공 `200`
 
 프론트가 **폴링하는 엔드포인트**이자 결과 화면의 기본 데이터 소스다.
 
@@ -530,7 +530,7 @@ curl -X POST http://localhost:8080/api/documents \
 |`documentId`|number||
 |`originalName`|string||
 |`fileSize`|number||
-|`pageCount`|number \| null||
+|`pageCount`|number|업로드 시점에 확정됨|
 |`status`|string|DocumentStatus|
 |`createdAt` / `updatedAt`|string||
 |`latestRun`|object|**RunDetail** (아래)|
@@ -620,7 +620,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.8 문서 삭제
 
-`DELETE /api/documents/{documentId}` · 인증 필요 · 성공 `200`
+`DELETE /api/v1/documents/{documentId}` · 인증 필요 · 성공 `200`
 
 문서와 하위 run/page/image 데이터, 저장된 파일(원본 PDF, 추출 이미지)을 모두 삭제한다.
 
@@ -636,7 +636,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.9 원본 PDF
 
-`GET /api/documents/{documentId}/file` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}/file` · 인증 필요 · 성공 `200`
 
 **Response**: 바이너리
 
@@ -651,7 +651,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.10 실행(run) 이력
 
-`GET /api/documents/{documentId}/runs` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}/runs` · 인증 필요 · 성공 `200`
 
 엔진별 성능 비교 화면용. 최신순 정렬, 페이징 없음(문서당 run은 소수로 가정).
 
@@ -688,7 +688,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.11 실행(run) 상세
 
-`GET /api/documents/{documentId}/runs/{runId}` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}/runs/{runId}` · 인증 필요 · 성공 `200`
 
 **Response `200`**: §6.7의 **RunDetail** 객체와 동일 (`data` 바로 아래)
 
@@ -698,7 +698,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.12 재처리
 
-`POST /api/documents/{documentId}/reprocess` · 인증 필요 · 성공 `202`
+`POST /api/v1/documents/{documentId}/reprocess` · 인증 필요 · 성공 `202`
 
 저장된 원본 PDF를 다른 엔진으로 다시 처리한다. 기존 run은 유지되고 **새 run이 추가**된다.
 
@@ -721,7 +721,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.13 결과 내보내기
 
-`GET /api/documents/{documentId}/runs/{runId}/export` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}/runs/{runId}/export` · 인증 필요 · 성공 `200`
 
 **Query**
 
@@ -747,13 +747,13 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 6.14 추출 이미지
 
-`GET /api/documents/{documentId}/runs/{runId}/images/{imageId}` · 인증 필요 · 성공 `200`
+`GET /api/v1/documents/{documentId}/runs/{runId}/images/{imageId}` · 인증 필요 · 성공 `200`
 
 **Response**: 바이너리, `Content-Type: image/png`
 
 **에러**: `401`, `404 DOCUMENT_NOT_FOUND`, `404 RUN_NOT_FOUND`, `404 IMAGE_NOT_FOUND`
 
-> `<img src>`는 인증 헤더를 못 붙이므로 프론트는 `fetch` → Blob URL로 표시한다. (미결 사항 §10 참고)
+> `<img src>`는 인증 헤더를 못 붙이므로 프론트는 `fetch` → Blob URL로 표시한다. (미결 사항 §1.1 참고)
 
 ---
 
@@ -769,20 +769,27 @@ curl -X POST http://localhost:8080/api/documents \
 { "status": "ok" }
 ```
 
+- 인프라 헬스체크 전용이라 **공통 응답 봉투를 적용하지 않는 예외**로 둔다.
+
 ### 7.2 F2. 엔진 목록
 
-`GET /ocr/engines`
+`GET /ocr/v1/engines`
 
-응답 구조는 §6.4의 `data`와 동일하다.
+응답 구조는 §6.4의 `data`와 동일하며, 공통 응답 봉투(`success`/`data`)로 감싼다.
 
 ```json
 {
-  "networkMode": "CLOSED",
-  "defaultEngine": "PADDLE",
-  "engines": [
-    { "name": "PYMUPDF", "available": true,  "external": false, "reason": null },
-    { "name": "OPENAI",  "available": false, "external": true,  "reason": "closed network mode" }
-  ]
+  "success": true,
+  "data": {
+    "networkMode": "CLOSED",
+    "defaultEngine": "PADDLE",
+    "engines": [
+      { "name": "AUTO",    "available": true,  "external": false, "reason": null },
+      { "name": "PYMUPDF", "available": true,  "external": false, "reason": null },
+      { "name": "PADDLE",  "available": true,  "external": false, "reason": null },
+      { "name": "OPENAI",  "available": false, "external": true,  "reason": "closed network mode" }
+    ]
+  }
 }
 ```
 
@@ -791,7 +798,7 @@ curl -X POST http://localhost:8080/api/documents \
 
 ### 7.3 F3. 텍스트/이미지 추출
 
-`POST /ocr/extract` · `multipart/form-data`
+`POST /ocr/v1/extract` · `multipart/form-data`
 
 **Request**
 
@@ -812,7 +819,7 @@ curl -X POST http://localhost:8080/api/documents \
 4. 페이지 순서대로 처리, 페이지별 처리시간 측정
 5. 응답의 `engine`은 **실제 사용된 주 엔진** (`AUTO`에서 OCR이 한 번도 일어나지 않았으면 `PYMUPDF`)
 
-**Response `200`** (봉투 없음)
+**Response `200`** (공통 응답 봉투 적용, 아래 표는 `data`의 필드)
 
 |필드|타입|설명|
 |---|---|---|
@@ -835,31 +842,44 @@ curl -X POST http://localhost:8080/api/documents \
 
 ```json
 {
-  "engine": "PADDLE",
-  "networkMode": "CLOSED",
-  "pageCount": 2,
-  "totalMs": 5230,
-  "avgConfidence": 0.94,
-  "pages": [
-    { "pageNo": 1, "source": "OCR", "text": "...", "confidence": 0.94, "processingMs": 2500 },
-    { "pageNo": 2, "source": "TEXT_LAYER", "text": "...", "confidence": null, "processingMs": 30 }
-  ],
-  "images": [
-    { "pageNo": 1, "format": "png", "width": 640, "height": 480, "dataBase64": "iVBORw0KGgo..." }
-  ]
+  "success": true,
+  "data": {
+    "engine": "PADDLE",
+    "networkMode": "CLOSED",
+    "pageCount": 2,
+    "totalMs": 5230,
+    "avgConfidence": 0.94,
+    "pages": [
+      { "pageNo": 1, "source": "OCR", "text": "...", "confidence": 0.94, "processingMs": 2500 },
+      { "pageNo": 2, "source": "TEXT_LAYER", "text": "...", "confidence": null, "processingMs": 30 }
+    ],
+    "images": [
+      { "pageNo": 1, "format": "png", "width": 640, "height": 480, "dataBase64": "iVBORw0KGgo..." }
+    ]
+  }
 }
 ```
 
-**Error 응답** (HTTP 4xx/5xx, 봉투 없음)
+**Error 응답** (HTTP 4xx/5xx 유지, 공통 에러 봉투 적용)
 
 ```json
-{ "error": { "code": "ENGINE_NOT_ALLOWED", "message": "OPENAI is disabled in closed network mode" } }
+{
+  "success": false,
+  "error": {
+    "code": "ENGINE_NOT_ALLOWED",
+    "message": "OPENAI is disabled in closed network mode",
+    "details": []
+  }
+}
 ```
+
+- HTTP 상태 코드(400/503/500 등)는 지금처럼 유지한다.
+- `details`는 §2 공통 규칙과 같은 `[{ "field": "...", "reason": "..." }]` 형식이며, 없으면 빈 배열이다.
 
 **curl 예시**
 
 ```bash
-curl -X POST http://localhost:8000/ocr/extract \
+curl -X POST http://localhost:8000/ocr/v1/extract \
   -F "file=@sample.pdf;type=application/pdf" \
   -F "engine=AUTO" \
   -F "extract_images=false"
@@ -972,3 +992,4 @@ Spring의 `app.ocr.client=mock`이면 FastAPI 없이도 위 API가 모두 동작
 | ---- | ---------- | ------------------------------------- | --- |
 | v0.1 | 2026-10-17 | 최초 초안                                 |     |
 | v0.2 | 2026-10-17 | 상세화 (필드 표, 에러 시점, 상태 전이, 시퀀스, 연동 가이드) |     |
+| v0.3 | 2026-10-19 | API 경로 `/api/v1` 적용, FastAPI 응답에 공통 봉투 적용(`/health` 제외), F2 예시에 AUTO 추가, 업로드 시 Spring이 페이지 수(≤50)를 1차 검증하고 `pageCount`를 업로드 시점에 확정, 재시작 시 PROCESSING 정리는 설정으로 켬 |     |
