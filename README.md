@@ -8,3 +8,12 @@ Global Academy 기술 문서 리포지토리
 
 > [!IMPORTANT]
 > **Shoot Down 예정일은 10/25/2026 23:59:59**
+
+
+# 2. Main Project
+
+
+
+# 3. Demo Application
+
+[Demo Projects Repo README.md](https://github.com/global-academy-project/ocr-project-demo)
