@@ -71,7 +71,7 @@ OpenAI API를 활용하여 PDF 이미지에서 텍스트를 추출하고, 추출
 | ------------------------- | ----------------------------------------------------- |
 | **Programing Language**   | JavaScript, Python (`v3.12.10`), Go (`v1.27.0`), Java |
 | **Other Script Language** | Shell, YML                                            |
-| **Database**              | MySQL (Docker Image with v8.4.11-oracle)              |
+| **Database**              | MySQL (Docker Image with v8.4.11-oraclelinux9)        |
 | **Infra & Delivery**      | Docker (v4.93.0), Kubernetes (v1.36.1)                |
 | **Website Type**          | Dynamic Website (React with Vite)                     |
 
