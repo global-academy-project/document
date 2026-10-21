@@ -547,6 +547,7 @@ curl -X POST http://localhost:8080/api/documents \
 |`totalMs`|number \| null|총 처리시간(ms). 진행 중이면 `null`|
 |`avgConfidence`|number \| null|0.0~1.0, `source=OCR` 페이지 평균. 해당 페이지가 없으면 `null`|
 |`errorMessage`|string \| null|`FAILED`일 때 사유|
+|`summary`|string \| null| 문서요약 텍스트, 요약이 없거나 PROCESSING/ FAILED 면 'null'|
 |`createdAt`|string||
 |`finishedAt`|string \| null||
 |`pages[]`|array|진행 중/실패 시 빈 배열|
@@ -737,7 +738,7 @@ curl -X POST http://localhost:8080/api/documents \
 **format=json**
 
 - `Content-Type: application/json; charset=UTF-8`
-- 봉투 없이 RunDetail에서 `images`를 제외한 객체를 그대로 반환
+- 봉투 없이 RunDetail에서 `images`를 제외한 객체를 그대로 반환(summary포함)
 
 공통: `Content-Disposition: attachment; filename*=UTF-8''{원본파일명(확장자 제외)}_{engine}.{txt|json}`
 
@@ -766,7 +767,7 @@ curl -X POST http://localhost:8080/api/documents \
 `GET /health`
 
 ```json
-{ "status": "ok" }
+{ "success": true, "data": { "status": "ok" } }
 ```
 
 - 인프라 헬스체크 전용이라 **공통 응답 봉투를 적용하지 않는 예외**로 둔다.
@@ -807,6 +808,7 @@ curl -X POST http://localhost:8080/api/documents \
 |`file`|file|O||PDF|
 |`engine`|string|X|`AUTO`|Engine enum|
 |`extract_images`|bool|X|`false`|이미지 추출 여부|
+|`summary`|string|null|"문서 요약 텍스트"|
 |`lang`|string|X|`ko,en`|OCR 언어 힌트 (엔진이 지원하는 경우만 적용)|
 
 **처리 규칙**
@@ -842,21 +844,22 @@ curl -X POST http://localhost:8080/api/documents \
 
 ```json
 {
-  "success": true,
-  "data": {
-    "engine": "PADDLE",
-    "networkMode": "CLOSED",
-    "pageCount": 2,
-    "totalMs": 5230,
-    "avgConfidence": 0.94,
-    "pages": [
-      { "pageNo": 1, "source": "OCR", "text": "...", "confidence": 0.94, "processingMs": 2500 },
-      { "pageNo": 2, "source": "TEXT_LAYER", "text": "...", "confidence": null, "processingMs": 30 }
-    ],
-    "images": [
-      { "pageNo": 1, "format": "png", "width": 640, "height": 480, "dataBase64": "iVBORw0KGgo..." }
-    ]
-  }
+   "success": true,
+   "data": {
+      "engine": "PADDLE",
+      "networkMode": "CLOSED",
+      "pageCount": 2,
+      "totalMs": 5230,
+      "avgConfidence": 0.94,
+      "pages": [
+         { "pageNo": 1, "source": "OCR", "text": "...", "confidence": 0.94, "processingMs": 2500 },
+         { "pageNo": 2, "source": "TEXT_LAYER", "text": "...", "confidence": null, "processingMs": 30 }
+      ],
+      "images": [
+         { "pageNo": 1, "format": "png", "width": 640, "height": 480, "dataBase64": "iVBORw0KGgo..." }
+      ],
+      "summary": "문서 요약 텍스트"
+   }
 }
 ```
 
@@ -893,6 +896,7 @@ curl -X POST http://localhost:8000/ocr/v1/extract \
 |`networkMode`|`ocr_runs.network_mode` 확인/갱신|
 |`totalMs`, `avgConfidence`|`ocr_runs.total_ms`, `avg_confidence`|
 |`pages[]`|`ocr_pages`에 페이지별 저장 (`run_id`, `page_no` 유니크)|
+|`summary`|`ocr_runs.summary`(TEXT, null 허용). 빈 문자열이면 null로 저장|
 |`images[]`|base64 디코딩 → `storage/images/{documentId}/{runId}/...png` 저장 → `ocr_images`에 경로 저장|
 |`pageCount`|`documents.page_count`|
 |에러 응답/연결 실패/타임아웃|`ocr_runs.status=FAILED`, `error_message="{code}: {message}"`, 문서 상태 `FAILED`|
@@ -982,7 +986,7 @@ sequenceDiagram
 
 ### 9.5 Mock 개발
 
-Spring의 `app.ocr.client=mock`이면 FastAPI 없이도 위 API가 모두 동작한다. 프론트는 처음부터 실제 Spring을 붙여 개발해도 된다. (Mock은 약 3초 후 `DONE` 처리, 고정 텍스트 반환)
+Spring의 `app.ocr.client=mock`이면 FastAPI 없이도 위 API가 모두 동작한다. 프론트는 처음부터 실제 Spring을 붙여 개발해도 된다. (Mock은 약 1.5초 후 DONE 처리, 고정 텍스트와 [MOCK] 요약 반환)
 
 ---
 
@@ -993,3 +997,4 @@ Spring의 `app.ocr.client=mock`이면 FastAPI 없이도 위 API가 모두 동작
 | v0.1 | 2026-10-17 | 최초 초안                                 |     |
 | v0.2 | 2026-10-17 | 상세화 (필드 표, 에러 시점, 상태 전이, 시퀀스, 연동 가이드) |     |
 | v0.3 | 2026-10-19 | API 경로 `/api/v1` 적용, FastAPI 응답에 공통 봉투 적용(`/health` 제외), F2 예시에 AUTO 추가, 업로드 시 Spring이 페이지 수(≤50)를 1차 검증하고 `pageCount`를 업로드 시점에 확정, 재시작 시 PROCESSING 정리는 설정으로 켬 |     |
+| v0.4 | 2026-10-21 | RunDetail에 summary 추가 (ocr_runs.summary), FastAPI F3 응답에 summary 추가, 엔진은 OPENAI 우선(로컬 엔진 준비 중), 본문의 경로를 /api/v1로 통일, /health 봉투 적용 | 김영민 |
