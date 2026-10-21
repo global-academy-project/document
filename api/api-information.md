@@ -52,7 +52,7 @@
 [web]  ──(JSON/multipart)──>  [Spring Boot :8080]  ──(multipart/JSON)──>  [FastAPI :8000]
 React                          인증, 업로드, DB 저장                         OCR 처리, 엔진 선택
                                     │                                          │
-                                  MySQL                               PyMuPDF / Paddle / Tesseract
+                                  MySQL                               PDFIUM / Paddle / Tesseract
                                                                       Ollama / OpenAI
 ```
 
@@ -194,7 +194,7 @@ React                          인증, 업로드, DB 저장                     
 |값|설명|사용 가능 망|비고|
 |---|---|---|---|
 |`AUTO`|페이지별 자동 선택|둘 다|텍스트 레이어가 있으면 PYMUPDF, 없으면 기본 OCR 엔진(`OCR_ENGINE`). **외부 전송은 하지 않는다** (기본 엔진이 `openai`로 명시된 경우만 예외)|
-|`PYMUPDF`|PDF 내장 텍스트 추출|둘 다|OCR 아님. 스캔 페이지는 빈 텍스트가 반환될 수 있음 (실패 아님)|
+|`PDFIUM`|PDF 내장 텍스트 추출|둘 다|OCR 아님. 스캔 페이지는 빈 텍스트가 반환될 수 있음 (실패 아님)|
 |`PADDLE`|PaddleOCR|둘 다|로컬|
 |`TESSERACT`|Tesseract|둘 다|로컬|
 |`OLLAMA`|로컬 비전 LLM|둘 다|로컬. 모델 사전 설치 필요. 느릴 수 있음|
@@ -380,7 +380,7 @@ OCR 처리는 **비동기**라서 에러 전달 방식이 두 가지다.
     "defaultEngine": "PADDLE",
     "engines": [
       { "name": "AUTO",      "available": true,  "external": false, "reason": null },
-      { "name": "PYMUPDF",   "available": true,  "external": false, "reason": null },
+      { "name": "PDFIUM",   "available": true,  "external": false, "reason": null },
       { "name": "PADDLE",    "available": true,  "external": false, "reason": null },
       { "name": "TESSERACT", "available": true,  "external": false, "reason": null },
       { "name": "OLLAMA",    "available": false, "external": false, "reason": "모델이 설치되지 않았습니다." },
@@ -786,7 +786,7 @@ curl -X POST http://localhost:8080/api/documents \
     "defaultEngine": "PADDLE",
     "engines": [
       { "name": "AUTO",    "available": true,  "external": false, "reason": null },
-      { "name": "PYMUPDF", "available": true,  "external": false, "reason": null },
+      { "name": "PDFIUM", "available": true,  "external": false, "reason": null },
       { "name": "PADDLE",  "available": true,  "external": false, "reason": null },
       { "name": "OPENAI",  "available": false, "external": true,  "reason": "closed network mode" }
     ]
@@ -819,7 +819,7 @@ curl -X POST http://localhost:8080/api/documents \
     - `AUTO`: 페이지별로 텍스트 레이어의 글자 수가 **20자 이상**이면 `PYMUPDF`(`source=TEXT_LAYER`), 미만이면 기본 OCR 엔진(`source=OCR`)
     - 그 외: 지정 엔진으로 전체 페이지 처리
 4. 페이지 순서대로 처리, 페이지별 처리시간 측정
-5. 응답의 `engine`은 **실제 사용된 주 엔진** (`AUTO`에서 OCR이 한 번도 일어나지 않았으면 `PYMUPDF`)
+5. 응답의 `engine`은 **실제 사용된 주 엔진** (`AUTO`에서 OCR이 한 번도 일어나지 않았으면 `PDFIUM`)
 
 **Response `200`** (공통 응답 봉투 적용, 아래 표는 `data`의 필드)
 
@@ -998,3 +998,4 @@ Spring의 `app.ocr.client=mock`이면 FastAPI 없이도 위 API가 모두 동작
 | v0.2 | 2026-10-17 | 상세화 (필드 표, 에러 시점, 상태 전이, 시퀀스, 연동 가이드) |     |
 | v0.3 | 2026-10-19 | API 경로 `/api/v1` 적용, FastAPI 응답에 공통 봉투 적용(`/health` 제외), F2 예시에 AUTO 추가, 업로드 시 Spring이 페이지 수(≤50)를 1차 검증하고 `pageCount`를 업로드 시점에 확정, 재시작 시 PROCESSING 정리는 설정으로 켬 |     |
 | v0.4 | 2026-10-21 | RunDetail에 summary 추가 (ocr_runs.summary), FastAPI F3 응답에 summary 추가, 엔진은 OPENAI 우선(로컬 엔진 준비 중), 본문의 경로를 /api/v1로 통일, /health 봉투 적용 | 김영민 |
+| v0.5 | 2026-10-21 | 엔진 PYMUPDF를 PDFIUM으로 변경, 지원 엔진 목록 정리(AUTO, PDFIUM, OPENAI) | 김영민 |
