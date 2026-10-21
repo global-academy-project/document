@@ -4,9 +4,12 @@
 
 * **Dev Date :** 10/17/2026 ~ 10/24/2026 23:59:59
 * **Member :**
-  - 김영민 : Backend (``) 
-  - 승진 : Frontend (``)
+  - 김영민 : Backend (`Server application develop`) 
+  - 승진 : Frontend (`Web event handler`)
   - 최건우 : Infra, Frontend, Backend
+      - Infra (`Docker -> Docker Compose`)
+      - Frontend (`React build UI`)
+      - Backend (`Dockerfile management`)
   - 최민기 : Backend (`OCR`)
 
 ### Objective
@@ -21,18 +24,13 @@ OpenAI API를 통해 PDF 파일의 이미지에서 텍스트 (Image-Text-to-Text
 
 ## 2.1 Applied Skill Stacks
 
-| **Category**              | **Technology Stack**                                  |
+| **Category**              | **Proposed Technology Stack**                         |
 | ------------------------- | ----------------------------------------------------- |
 | **Programing Language**   | JavaScript, Python (`v3.12.10`), Go (`v1.27.0`), Java |
 | **Other Script Language** | Shell, YML                                            |
 | **Database**              | MySQL (Docker Image with v8.4.11-oracle)              |
 | **Infra & Delivery**      | Docker (v4.93.0), Kubernetes (v1.36.1)                |
 | **Website Type**          | Dynamic Website (React with Vite)                     |
-
-> [!NOTE]
-> **현재 기술 스택 적용 범위와 개발 환경 구축은 사전 교육 기간 중 진행한 버전으로 고정하여 일관된 서비스를 개발하는 것으로 논의중**
-
-## 2.2 
 
 
 ---
