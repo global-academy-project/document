@@ -12,6 +12,7 @@ Global Academy 기술 문서 리포지토리
 
 # 2. Main Project
 
+[Product Main Project README.md](product/mainproject-readme.md)
 
 
 # 3. Demo Application
