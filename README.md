@@ -12,9 +12,8 @@ Global Academy 기술 문서 리포지토리
 
 # 2. Main Project
 
-[Product Main Project README.md](product/mainproject-readme.md)
-
+[product/miniproject-readme.md](https://github.com/global-academy-project/mini-project-demo)
 
 # 3. Demo Application
 
-[Demo Projects Repo README.md](https://github.com/global-academy-project/ocr-project-demo)
+[product/mainproject-readme.md](https://github.com/global-academy-project/main-project-demo)
