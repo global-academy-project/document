@@ -6,7 +6,7 @@
 * **Member :**
   - 김영민 : Backend (`Server application develop`) 
   - 승진 : Frontend (`Web event handler`)
-  - 최건우 : Infra, Frontend, Backend
+  - 최건우 : PM, Infra, Frontend, Backend
       - Infra (`Docker -> Docker Compose`)
       - Frontend (`React build UI`)
       - Backend (`Dockerfile management`)
