@@ -9,7 +9,7 @@ Windows에서 AMD GPU와 ROCm 지원 PyTorch를 사용하는 설치 안내입니
 - ROCm for Radeon에서 지원하는 AMD GPU와 드라이버
 - PowerShell
 
-PyTorch wheel 파일명에 `cp312`가 포함되어 있어 Python 3.12가 필요합니다. 아래 명령은 `py` 디렉터리에서 실행합니다.
+PyTorch wheel 파일명에 `cp312`가 포함되어 있어 Python 3.12가 필요합니다. 아래 명령은 `Python Project` 디렉터리에서 실행합니다.
 
 ## 설치
 
