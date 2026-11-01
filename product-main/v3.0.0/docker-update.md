@@ -1,9 +1,5 @@
 # AI 모델 Dockerfile 및 개발 Compose 변경 기록
 
-## 범위
-
-이 문서는 `main-ai-model/Dockerfile`과 개발용 `main-infra-manage/docker/docker-compose.dev.yml`의 변경 사항 및 검증 결과를 기록한다. 현재 개발 Compose는 `Dockerfile.dev`가 아니라 `Dockerfile`을 사용한다. 운영용 `docker-compose.yml`에는 아직 변경을 적용하지 않았다.
-
 ## 베이스 이미지 버전 선택
 
 현재 프로젝트의 Dockerfile 세 개는 다음 베이스 이미지를 사용한다.
