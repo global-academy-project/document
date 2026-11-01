@@ -4,6 +4,30 @@
 
 이 문서는 `main-ai-model/Dockerfile`과 개발용 `main-infra-manage/docker/docker-compose.dev.yml`의 변경 사항 및 검증 결과를 기록한다. 현재 개발 Compose는 `Dockerfile.dev`가 아니라 `Dockerfile`을 사용한다. 운영용 `docker-compose.yml`에는 아직 변경을 적용하지 않았다.
 
+## 베이스 이미지 버전 선택
+
+현재 프로젝트의 Dockerfile 세 개는 다음 베이스 이미지를 사용한다.
+
+| 서비스 | Dockerfile 베이스 이미지 | 의미 및 선택 이유 |
+| --- | --- | --- |
+| 웹 프론트엔드 | `node:24.22.2-alpine3.24` | Node.js 24.22.2와 Alpine Linux 3.24를 명시한다. 앱 빌드에는 Node 환경이 필요하므로 그대로 사용하며, 실제 이미지 크기는 빌드 결과로 확인한다. |
+| Spring 서버 빌드 단계 | `eclipse-temurin:17-jdk-resolute` | Temurin Java 17 JDK와 Ubuntu Resolute 기반 빌드 환경을 사용한다. Gradle 실행 및 JAR 생성에 사용되며 멀티스테이지 빌드의 최종 런타임 이미지에는 들어가지 않는다. |
+| Spring 서버 런타임 단계 | `eclipse-temurin:17-jre-resolute` | 같은 Java 및 Ubuntu 계열의 JRE만 최종 이미지에 포함한다. JDK가 아닌 JRE를 사용해 실행 이미지를 구성한다. |
+| AI 모델 서비스 | `python:3.12.15-slim` | Python 3.12.15와 slim 변형을 명시한다. ML wheelhouse, AI/임베딩, 경량 ingest stage가 이 공통 베이스를 상속한다. |
+
+### Noble과 Resolute 비교
+
+Spring 서버 런타임 JRE를 `noble`과 `resolute`로 바꾸어 로컬 이미지 크기를 비교했다.
+
+| 비교 대상 | Noble | Resolute | 차이 |
+| --- | ---: | ---: | ---: |
+| Temurin 17 JRE 베이스 이미지 | 376.76 MB | 432.11 MB | Noble이 55.35 MB 작음 |
+| 빌드된 Spring 서버 이미지 | 507.74 MB | 561.23 MB | Noble이 53.49 MB 작음 |
+
+측정값상 Noble 이미지가 작았지만, 최종 선택은 지원 기간을 우선해 `resolute`로 했다. Noble은 Ubuntu 24.04 LTS, Resolute는 Ubuntu 26.04 LTS 기반이다. 따라서 이 변경은 용량 최소화보다는 더 긴 지원 기간을 우선한 선택이다. Noble 빌드는 61.5초, Resolute 빌드는 28.1초였지만 베이스 이미지 다운로드와 캐시 상태가 달라 빌드 속도 비교 자료로는 사용할 수 없다.
+
+태그에 버전과 배포판 코드명이 지정되어 있어도 태그 자체는 digest처럼 불변 식별자가 아니다. 같은 태그가 보안 및 상위 이미지 업데이트로 새 이미지를 가리킬 수 있다. 바이트 단위 재현성이 필요하면 digest 고정을 검토하고, 고정한 경우 보안 업데이트에 맞춰 digest를 갱신하는 절차를 둔다.
+
 ## Dockerfile 변경
 
 ### 변경 전 문제
