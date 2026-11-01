@@ -2,7 +2,7 @@
 
 ## 목적 및 범위
 
-이 문서는 Spring Boot, AI API, 임베딩 API, Qdrant 사이의 실제 요청 경로와 개발 Compose에서 남아 있는 연결 작업을 기록한다. Dockerfile 및 개발 빌드 변경 기록은 [docker-update.md](docker-update.md)를 참고한다.
+이 문서는 Spring Boot, AI API, 임베딩 API, Qdrant 사이의 실제 요청 경로와 개발 Compose에서 남아 있는 연결 작업을 기록한다. Dockerfile 및 개발 빌드 변경 기록은 [docker-update-v3.0.1.md](docker-update-v3.0.1.md)를 참고한다.
 
 ## 예상 요청 경로
 
