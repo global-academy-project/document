@@ -1,4 +1,9 @@
-# AI 모델 Dockerfile 및 개발 Compose 변경 기록
+# AI 모델 Dockerfile 및 Compose 변경 기록 v3.0.1
+
+| 버전 | 날짜 | 내용 |
+| --- | --- | --- |
+| v3.0.0 | 2026-11-01 | AI 모델 Dockerfile stage 재구성, 개발 Compose 타깃 및 모델 캐시 구성 |
+| v3.0.1 | 2026-11-01 | `docker-compose.yml`과 `docker-compose.dev.yml` 통일, 환경 변수 공개/비공개 분리, RAG 환경 변수를 AI 서버로 이동 |
 
 ## 베이스 이미지 버전 선택
 
@@ -76,9 +81,63 @@ Stage 별칭을 소문자로 통일해 Compose의 `target: ai`, `target: embeddi
 - AI 모델과 임베딩 모델의 다운로드 캐시를 각각 `ai-model-cache:/models/huggingface`, `embedding-model-cache:/models/huggingface`에 보존한다.
 - 임베딩 컨테이너는 `EMBEDDING_LOCAL_FILES_ONLY=false`로 실행해 캐시가 비어 있으면 Hugging Face Hub에서 모델을 받을 수 있게 한다.
 - `kb-migrator`의 URL은 실제 개발 Compose 서비스명과 내부 포트를 사용한다: `http://python-embedding-model:60110/v1/embeddings`.
-- Spring 서비스의 `APP_AGENT_BASE_URL`과 AI 서비스의 RAG 환경 변수 연결은 아직 완료되지 않았다. 상세 내용과 남은 작업은 [Spring-AI 연동 문서](spring-ai-integration.md)에 분리했다.
+- AI 서비스의 RAG 환경 변수 연결은 v3.0.1에서 완료했다. Spring 서비스의 `APP_AGENT_BASE_URL` 연결은 아직 완료되지 않았다. 상세 내용과 남은 작업은 [Spring-AI 연동 문서](spring-ai-integration.md)에 분리했다.
 
 Compose 네트워크 안에서 컨테이너 간 요청은 호스트 공개 포트가 아닌 서비스명과 컨테이너 포트를 사용한다. 예를 들어 migrator는 `python-embedding-model:60110`으로 연결한다.
+
+## v3.0.1 Compose 변경
+
+### 파일 통일
+
+`docker-compose.yml`의 활성 설정을 `docker-compose.dev.yml`과 동일하게 맞췄다. `docker compose config --no-interpolate` 출력 비교 결과 두 파일의 활성 설정은 같다. `docker-compose.yml` 하단에는 이전 운영 구성이 주석으로 남아 있으며 실행에는 영향을 주지 않는다.
+
+### 환경 변수 작성 규칙
+
+각 서비스의 `environment`를 두 그룹으로 나눴다.
+
+| 구분 | 작성 방식 | 대상 |
+| --- | --- | --- |
+| Public bind environment | Compose 파일에 값을 직접 작성 | 서비스명 기반 URL, 내부 포트, 모델명, 벡터 차원, 시간대 등 환경마다 바뀌지 않는 값 |
+| Private bind environment | `.env`에서 `${VAR}`로 주입 | 비밀번호, 토큰, API 키, 환경별로 바뀌는 값 |
+
+이 규칙에 따라 `.env`에서 읽던 고정값을 Compose 파일로 옮겼다.
+
+| 서비스 | 변경 전 | 변경 후 |
+| --- | --- | --- |
+| `python-embedding-model` | `EMBEDDING_MODEL: ${EMBEDDING_MODEL}`, `EMBEDDING_DIM: ${EMBEDDING_DIM}`, `TZ: ${TZ:-Asia/Seoul}` | `BAAI/bge-m3`, `"1024"`, `Asia/Seoul` 직접 작성. `EMBEDDING_MAX_TOKENS: 8192`, `EMBEDDING_MAX_BATCH_SIZE: 8` 추가 |
+| `database-mysql-server` | `TZ: ${TZ:-Asia/Seoul}` | `TZ: Asia/Seoul` |
+| `kb-migrator` | `KB_OWNER_USER: ${KB_OWNER_USER}`, `-user=${KB_OWNER_USER}`, `EMBEDDING_MODEL`/`EMBEDDING_DIM`을 `.env`에서 주입 | `kb_owner`, `BAAI/bge-m3`, `"1024"` 직접 작성. `EMBEDDING_MAX_TOKENS`, `EMBEDDING_MAX_BATCH_SIZE` 추가 |
+
+임베딩 모델명과 차원은 `python-ai-model`, `python-embedding-model`, `kb-migrator`가 같은 값을 써야 한다. 값을 바꿀 때는 세 서비스를 함께 수정하고 기존 Qdrant 컬렉션과 KB 데이터를 다시 적재해야 한다.
+
+### RAG 환경 변수 위치 이동
+
+`main-ai-model` 코드 기준으로 RAG 검색 클라이언트는 AI 서버(`app.main`)이며, 임베딩 서버(`app.rag.embedding_api`)는 `EMBEDDING_URL`이나 `RAG_*` 값을 읽지 않는다. 따라서 RAG 설정을 임베딩 서버에서 AI 서버로 옮겼다.
+
+| 서비스 | 제거 | 추가 |
+| --- | --- | --- |
+| `python-embedding-model` | `EMBEDDING_URL`, `RAG_BACKEND`, `RAG_SEARCH_TIMEOUT_SECONDS` | - |
+| `python-ai-model` | - | `RAG_BACKEND: app.rag.tool_backend:build_search_backend`, `RAG_SEARCH_TIMEOUT_SECONDS: 60`, `EMBEDDING_URL: http://python-embedding-model:60110/v1/embeddings`, `EMBEDDING_MODEL`, `EMBEDDING_DIM`, `QDRANT_URL: http://qdrant-server:6333`, `EMBEDDING_API_KEY`, `QDRANT_READ_ONLY_API_KEY` |
+
+> 동작 변경: 이전에는 AI 서버에 `RAG_BACKEND`가 없어 검색 도구가 mock으로 동작했다. 현재는 실제 임베딩 서버와 Qdrant를 호출한다. Qdrant 컬렉션이나 KB 데이터가 없으면 검색 단계에서 오류가 날 수 있다. mock으로 되돌리려면 `python-ai-model`에서 `RAG_BACKEND`만 제거한다.
+
+### 기타 수정
+
+| 서비스 | 변경 전 | 변경 후 | 이유 |
+| --- | --- | --- | --- |
+| `vite-web-application` | `"${WEB_FRONTEND_PORT}:${WEB_FRONTEND_PORT:-50001}"` | `"${WEB_FRONTEND_PORT}:50001"` | 컨테이너 포트는 Vite 서버가 실제로 여는 50001로 고정 |
+| `database-mysql-server` | `../db/verify:/opt/db-verify:ro` | `../db/verify:/opt/verify:ro` | 검증 SQL 경로 변경. MySQL 안에서 `SOURCE /opt/verify/<파일명>.sql`로 실행 |
+| `spring-boot-application` | 환경 변수 순서 혼재 | Public/Private 그룹으로 재배치 | 작성 규칙 통일 |
+
+### v3.0.1에서 확인된 회귀 및 남은 작업
+
+| 항목 | 현재 값 | 필요한 값 | 영향 |
+| --- | --- | --- | --- |
+| Spring `APP_OCR_BASE_URL`, `APP_AGENT_BASE_URL` | `http://ai-model-server:60100` | `http://python-ai-model:60100` | v3.0.0 시점에는 `python-ai-model`이었으나 재배치 중 존재하지 않는 서비스명으로 바뀌었다. Spring에서 AI 서버로의 OCR/Agent 호출이 DNS 오류로 실패한다. |
+| `kb-ingest` `KB_DB_PORT` | `${MYSQL_PORT}` | `3306` | `MYSQL_PORT`는 호스트 공개 포트다. 컨테이너 간 연결은 MySQL 내부 포트 3306을 써야 한다. 두 값이 다르면 ingest의 DB 연결이 실패한다. |
+| Spring `ADMIN_PASSWORD` | Compose에 직접 작성 | `.env`에서 주입 | 비밀값이 저장소에 노출된다. |
+| Qdrant API 키 환경 변수 | `QDRANT_API_KEY`, `QDRANT_READ_ONLY_API_KEY` | `QDRANT__SERVICE__API_KEY`, `QDRANT__SERVICE__READ_ONLY_API_KEY` | Qdrant는 `QDRANT__SERVICE__*` 형식만 설정으로 읽는다. 현재 이름으로는 API 키 인증이 적용되지 않을 수 있다. 실제 인증 여부는 아직 검증하지 않았다. |
+| 서비스 기동 순서 | `depends_on`, healthcheck 없음 | MySQL healthcheck와 Spring/`kb-migrator`/`kb-ingest`의 `depends_on` | MySQL 준비 전에 Spring이 시작되면 `Communications link failure`로 재시작을 반복할 수 있다. |
 
 ## 검증 결과
 
@@ -92,4 +151,13 @@ Compose 네트워크 안에서 컨테이너 간 요청은 호스트 공개 포�
 - 화학 안전 문장끼리 코사인 유사도는 `0.799271`, `0.753345`, `0.751789`였다. 도서관 문장과 화학 안전 문장 간 유사도는 `0.418287`, `0.402556`, `0.378848`이었다. 시험 문장 세트에서 관련 문장이 상대적으로 더 가까웠다.
 - 공개 모델의 첫 다운로드 때 Hugging Face 인증 안내가 출력됐지만 다운로드와 추론은 성공했다. HF 토큰은 필수로 설정하지 않았다.
 
-이 결과는 각 이미지 빌드, 모듈 import, 임베딩 API 단독 요청까지 검증한 것이다. Spring Boot에서 시작해 AI API, 임베딩 API, Qdrant까지 이어지는 통합 검증은 아직 수행하지 않았다. 운영 Compose에도 변경을 적용하지 않았다.
+이 결과는 각 이미지 빌드, 모듈 import, 임베딩 API 단독 요청까지 검증한 것이다.
+
+### v3.0.1 검증
+
+- `docker compose -f main-infra-manage/docker/docker-compose.yml config --quiet` 통과.
+- `docker-compose.yml`과 `docker-compose.dev.yml`의 `config --no-interpolate` 출력이 동일함을 확인했다.
+- `python-ai-model` 컨테이너에서 `RagSettings.from_env()`가 `EMBEDDING_URL`, `QDRANT_URL`, `EMBEDDING_DIM=1024`, Qdrant 읽기 키를 정상으로 읽었다.
+- AI 컨테이너에서 임베딩 서버 `/ready`와 Qdrant `/readyz`에 요청해 둘 다 HTTP 200을 받았다. 임베딩 서버는 모델 로딩에 약 20~60초가 걸려 기동 직후에는 연결이 거부될 수 있다.
+
+Spring Boot에서 시작해 AI API, 임베딩 API, Qdrant까지 이어지는 통합 검색 요청은 아직 검증하지 않았다. Spring의 AI 서버 URL 회귀가 해결되어야 이 경로를 검증할 수 있다.
