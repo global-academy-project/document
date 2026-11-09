@@ -1,71 +1,116 @@
-# AI 모델 Dockerfile 개발 명세서
+# AI Model Dockerfile 및 Compose 명세서
 
 ## 목적 및 범위
 
-이 명세서는 실험용 `main-ai-model/Dockerfile.dev`와 `main-infra-manage/docker/docker-compose.dev.yml`을 통한 검증 방법을 설명한다. 운영용 Compose 설정은 이 문서의 수정 대상이나 범위에 포함하지 않는다. 개발 설정의 검증이 끝나면 필요한 타깃 및 실행 설정을 운영 Compose 파일에 반영할 수 있다.
+이 명세서는 `main-ai-model/Dockerfile`의 `ai`, `embedding`, `ingest`, `qdrant-init` 빌드 타깃과 `main-infra-manage/docker/docker-compose.yml`의 서비스·포트·환경 변수 연결을 설명한다.
 
 ## 설계 목표
 
-- API, 임베딩 API, KB 수집 서비스를 각각 명시적인 Docker 타깃으로 빌드한다.
-- 용량이 큰 PyTorch 및 Transformers 의존성 레이어를 API와 임베딩 타깃에서 공유한다.
-- KB 수집 이미지에는 ML 의존성이 포함되지 않도록 한다.
+- AI API, 임베딩 API, KB ingest, Qdrant schema 초기화 작업을 각기 적절한 Docker 타깃으로 빌드한다.
+- 용량이 큰 ML 의존성은 AI API와 임베딩 타깃에서 공유한다.
+- ingest와 Qdrant 초기화 이미지는 각자의 경량 의존성만 포함한다.
 - 다운로드한 Python wheel 파일은 최종 런타임 이미지에 포함하지 않는다.
-- Hugging Face 모델 파일은 이미지 레이어가 아니라 영속 개발 볼륨에 저장한다.
-- 이미지별 기본 실행 명령과 컨테이너 포트를 명확히 지정해 Compose에서 Dockerfile 진입점을 직접 검증할 수 있게 한다.
+- Hugging Face 모델 파일은 이미지 레이어가 아니라 영속 named volume에 저장한다.
+- 장시간 실행 서비스와 일회성 초기화 작업의 실행 명령 및 포트를 명확히 분리한다.
 
 ## 스테이지 구성
 
 | 스테이지 | 역할 | 최종 이미지 포함 여부 |
 | --- | --- | --- |
 | `base` | Python 3.12 실행 환경, 공통 환경 변수, `/app` 작업 디렉터리를 제공한다. | 부모 레이어로 포함 |
-| `ml-wheelhouse` | `requirements.release.txt`에 필요한 바이너리 wheel을 다운로드한다. BuildKit이 pip 다운로드 캐시를 관리한다. | 미포함 |
-| `ml-dependencies` | `/opt/venv`를 만들고 wheelhouse에서 ML 의존성을 오프라인 설치한 뒤 `pip check`를 실행한다. | `ai`, `embedding`에 포함 |
-| `ingest-dependencies` | `requirements.ingest.txt`에서 FastAPI와 Uvicorn만 설치한다. | `ingest`에 포함 |
+| `ml-wheelhouse` | `requirements.release.txt`의 바이너리 wheel을 다운로드한다. BuildKit pip 캐시를 사용한다. | 미포함 |
+| `ml-dependencies` | `/opt/venv`에 ML 의존성을 설치하고 `pip check`를 실행한 뒤 wheel을 삭제한다. | `ai`, `embedding`에 포함 |
 | `ai` | 애플리케이션을 복사하고 `app.main:app`을 포트 60100에서 실행한다. | 포함 |
-| `embedding` | 애플리케이션을 복사하고 팩토리로 `app.rag.embedding_api:create_app`을 포트 8000에서 실행한다. | 포함 |
+| `embedding` | 애플리케이션을 복사하고 factory로 `app.rag.embedding_api:create_app`을 포트 60110에서 실행한다. | 포함 |
+| `ingest-dependencies` | `requirements.ingest.txt`에서 FastAPI, Uvicorn, PyMySQL RSA 인증 의존성을 설치한다. | `ingest`에 포함 |
 | `ingest` | 애플리케이션을 복사하고 `app.ingest_main:app`을 포트 8001에서 실행한다. | 포함 |
+| `qdrant-init` | `requirements.qdrant-init.txt`에서 `qdrant-client`를 설치하고 `scripts/`를 복사한다. 기본 명령은 `python -m scripts.init_qdrant`다. | 포함 |
 
-현재 API와 임베딩 서비스 모두 Torch와 Transformers가 필요하다. 임베딩 인코더가 두 패키지를 직접 가져오며, API의 기본 `CATEGORIZATOR` 엔진도 로컬 Transformers 모델을 불러온다. 따라서 용량이 큰 의존성 레이어를 두 이미지에 따로 만들지 않고 공유한다. 경량 ingest 서비스는 두 패키지를 가져오지 않으므로 별도의 의존성 스테이지를 사용한다.
+AI API와 임베딩 서비스는 `requirements.txt`의 FastAPI/Pydantic 계층과 `requirements.release.txt`의 CPU PyTorch 계층을 포함한다. 두 타깃은 같은 `ml-dependencies` 스테이지를 공유한다. `ingest`는 `requirements.ingest.txt`만 사용하며 ML 런타임을 설치하지 않는다. `qdrant-init`은 `qdrant-client`만 별도 설치하고 API 애플리케이션 코드는 복사하지 않는다.
 
-## Wheel 및 의존성 캐시
+## Requirements 구성
 
-`ml-wheelhouse`는 설치 전에 wheel의 의존성을 확인하고 파일을 다운로드한다. BuildKit 캐시 마운트에 연결한 pip 캐시는 이미지 레이어에 저장되지 않는다. `ml-dependencies`는 `--no-index` 옵션으로 `/wheelhouse`에서 패키지를 설치하고, 설치 환경을 검사한 뒤 복사된 wheelhouse를 삭제한다. 최종 API 및 임베딩 이미지에는 가상환경만 포함되고 다운로드한 wheel 파일은 포함되지 않는다.
+| 파일 | 사용 타깃 | 주요 역할 |
+| --- | --- | --- |
+| `requirements.txt` | `ai`, `embedding`의 공통 release dependency | FastAPI, Uvicorn, Pydantic, Transformers 등 운영 Python 패키지를 지정한다. |
+| `requirements.release.txt` | `ai`, `embedding` | `requirements.txt`를 포함하고 CPU 전용 Torch, Torchvision, Torchaudio wheel을 선택한다. |
+| `requirements.ingest.txt` | `ingest` | FastAPI, Pydantic Settings, Uvicorn, `PyMySQL[rsa]`를 설치한다. RSA extra는 MySQL `caching_sha2_password` 인증에 필요하다. |
+| `requirements.qdrant-init.txt` | `qdrant-init` | Qdrant API 호출용 `qdrant-client`를 설치한다. |
+| `requirements.dev.txt` | 개발·테스트 환경 | 운영 requirements를 포함하고 pytest 및 개발용 ML 패키지를 추가한다. |
 
-ML requirements 파일 중 하나가 바뀌면 wheelhouse 레이어가 다시 생성된다. 소스만 바뀐 경우에는 wheel 다운로드 및 설치 레이어를 재사용할 수 있다. ingest 의존성 레이어는 ML requirements 변경과 무관하다.
+`ml-wheelhouse`는 `requirements.release.txt`의 바이너리 wheel을 다운로드한다. BuildKit 캐시 마운트의 pip cache는 이미지 레이어에 포함되지 않는다. `ml-dependencies`는 wheelhouse에서 `--no-index`로 설치하고 `pip check`를 실행한 뒤 복사된 wheel을 삭제한다. 최종 AI 및 embedding 이미지에는 가상환경이 포함되고 다운로드 wheel은 포함되지 않는다.
 
-pip 캐시 마운트를 사용하려면 BuildKit이 필요하다. Docker Desktop의 일반 `docker build`는 BuildKit을 사용한다. CI가 매번 새 빌더를 사용한다면 BuildKit/buildx를 활성화하고 원격 캐시를 구성해야 한다.
+운영 requirements를 바꾸면 해당 dependency 설치 레이어가 다시 빌드된다. 애플리케이션 소스만 바뀌면 dependency 레이어는 재사용할 수 있다. `ingest`와 `qdrant-init`은 독립 requirements를 사용하므로 ML wheelhouse 변경과 분리되어 있다. pip cache mount를 사용하려면 BuildKit이 필요하다.
 
-## 개발 Compose 연결
+## Compose 연결
 
-`docker-compose.dev.yml`은 다음 타깃을 선택한다.
+운영 Compose는 `main-infra-manage/docker/docker-compose.yml`이며, 저장소 루트 기준 서비스와 포트는 다음과 같다.
 
-| 서비스 | Docker 타깃 | 컨테이너 포트 | Hugging Face 캐시 |
-| --- | --- | --- | --- |
-| `python-ai-model` | `ai` | 60100 | `ai-model-cache` |
-| `python-embedding-model` | `embedding` | 8000 | `embedding-model-cache` |
-| `kb-ingest` | `ingest` | 8001 | 불필요 |
+| 서비스 | Docker 타깃 | 컨테이너 포트 | Host port | 영속 볼륨 / 역할 |
+| --- | --- | --- | --- | --- |
+| `python-ai-model` | `ai` | 60100 | 60100 | `ai-model-cache`; RAG 검색은 Qdrant read-only key 사용 |
+| `python-embedding-model` | `embedding` | 60110 | 60110 | `embedding-model-cache`; bge-m3 모델 파일 캐시 |
+| `kb-ingest` | `ingest` | 8001 | 8001 | MySQL agent_kb와 Qdrant에 쓰기 |
+| `qdrant-init` | `qdrant-init` | 없음 | 없음 | Qdrant 컬렉션과 payload index를 준비하고 종료 |
 
-임베딩 서비스는 Dockerfile의 `CMD`를 직접 사용하며 Compose의 `command`로 덮어쓰지 않는다. 호스트 포트 기본값은 60110이며 이미지 내부의 8000번 포트에 연결한다. Hugging Face 볼륨은 컨테이너를 재생성해도 모델 다운로드를 보존하면서 이미지 크기를 늘리지 않는다.
+Compose 내부 통신은 host port가 아니라 `python-embedding-model:60110`, `qdrant-server:6333`, `database-mysql-server:3306` service 주소를 사용한다. AI와 ingest는 `qdrant-init`이 성공적으로 종료된 뒤 시작한다. `qdrant-init`은 Qdrant healthcheck 성공 뒤 실행된다.
 
-## 검증
+임베딩 서비스의 `EXPOSE`와 CMD 포트는 60110이다. 운영 Compose에서 별도 `command`로 덮어쓰지 않는다. Hugging Face 모델 파일은 named volume에 두어 이미지 크기를 늘리지 않고 컨테이너 재생성 후에도 재사용한다.
 
-저장소 루트에서 Compose 설정을 검증하고 세 타깃을 각각 빌드한다.
+`qdrant-init`의 기본 CMD는 컬렉션과 payload index를 없으면 생성하고 있으면 유지한다. `--check`는 테스트 point로 필터를 확인하고 삭제한다. `--recreate`는 기존 컬렉션 데이터를 삭제하므로 재임베딩/차원 변경 시에만 신중히 실행한다.
 
-```powershell
-docker compose -f main-infra-manage/docker/docker-compose.dev.yml config
-docker compose -f main-infra-manage/docker/docker-compose.dev.yml build python-ai-model
-docker compose -f main-infra-manage/docker/docker-compose.dev.yml build python-embedding-model
-docker compose -f main-infra-manage/docker/docker-compose.dev.yml build kb-ingest
+## 환경 변수 설정
+
+Compose는 비밀 값을 이미지에 넣지 않고 `.env` 또는 실행 환경에서 주입한다. `.env`는 저장소에 커밋하지 않는다.
+
+| 변수 | 사용처 | 비고 |
+| --- | --- | --- |
+| `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` | MySQL 업무 DB | `database-mysql-server` 및 Spring |
+| `KB_OWNER_PASSWORD`, `KB_INGEST_PASSWORD`, `KB_READER_PASSWORD` | `agent_kb` | Flyway, ingest, 선택적 reader |
+| `QDRANT_API_KEY`, `QDRANT_READ_ONLY_API_KEY` | Qdrant | 초기화/ingest는 쓰기 키, AI 검색은 읽기 키 |
+| `KB_INGEST_API_TOKEN` | ingest API | Compose에서 필수 값으로 검사 |
+| `EMBEDDING_API_KEY` | 임베딩 API | ingest와 호출 서비스에 전달 |
+| `INTERNAL_API_TOKEN`, `JWT_SECRET` | Spring 내부 API 및 인증 | 비밀 값으로 관리 |
+
+`database-mysql-server`는 최초 빈 `database-data` 볼륨에서 `../db/init`을 실행한다. 기존 볼륨에서는 init script가 자동 재실행되지 않는다. `kb-migrator`는 MySQL health dependency를 선언하지 않았으므로 MySQL ready 이후 별도로 실행한다.
+
+## 빌드 및 검증
+
+명령은 저장소 루트에서 실행한다.
+
+```bash
+docker compose --project-directory main-infra-manage/docker \
+	-f main-infra-manage/docker/docker-compose.yml config --quiet
+
+docker compose --project-directory main-infra-manage/docker \
+	-f main-infra-manage/docker/docker-compose.yml build \
+	python-ai-model python-embedding-model kb-ingest qdrant-init
 ```
 
-빌드가 통과하면 서비스를 실행해 API 상태 확인 엔드포인트, 모델 로딩이 끝난 뒤 임베딩 `/ready` 엔드포인트, ingest `/ready` 엔드포인트를 확인한다. 타깃별 이미지 크기와 빌드 로그도 비교한다. API와 임베딩 이미지는 의도적으로 ML 런타임을 공유하므로 계속 큰 편이고, ingest 이미지는 해당 비용을 피하는 것이 목표다.
+데이터베이스 초기화·마이그레이션과 서비스 기동은 다음 순서로 확인한다.
 
-2026-11-01 최초 개발 검증 결과:
+```bash
+docker compose --project-directory main-infra-manage/docker \
+	-f main-infra-manage/docker/docker-compose.yml up -d database-mysql-server qdrant-server
 
-- Compose에서 `ai`와 `embedding` 타깃을 함께 빌드하는 데 101초가 걸렸다. ML wheel 다운로드 및 설치 레이어를 공유했다.
-- `ingest` 타깃은 최초 단독 빌드에 10.6초가 걸렸고, 이후 Compose 빌드에는 2초가 걸렸다.
-- 각 이미지에서 API, 임베딩, ingest Python 진입점 모듈을 정상적으로 가져오는 것을 확인했다.
-- 로컬 이미지 목록에서 ML 이미지 각각은 2.24 GB, ingest 이미지는 252 MB로 표시됐다. Docker는 동일한 의존성 레이어를 로컬에서 공유하므로 두 ML 이미지의 크기를 단순 합산해 중복 저장량으로 보면 안 된다. 같은 레지스트리에 푸시하는 경우 전송 및 저장에서도 레이어를 공유할 수 있다.
-- 이 빌드 및 import 검증에서는 HTTP 서버 기동, API 상태 확인, 모델 로딩 후 임베딩 준비 상태를 확인하지 않았다.
+docker compose --project-directory main-infra-manage/docker \
+	-f main-infra-manage/docker/docker-compose.yml run --rm kb-migrator
 
-개발 빌드 및 런타임 검증이 끝나기 전에는 이 실험용 Dockerfile을 운영 경로에 복사하지 않는다. 검증된 타깃 선택, 포트, 모델 캐시 볼륨 설정만 운영 Compose에 반영한다.
+docker compose --project-directory main-infra-manage/docker \
+	-f main-infra-manage/docker/docker-compose.yml up --build -d \
+	qdrant-init python-embedding-model python-ai-model kb-ingest
+```
+
+확인 항목:
+
+- `docker compose ps`에서 MySQL과 Qdrant가 실행 중이고 Qdrant healthcheck가 healthy인지 확인한다.
+- `qdrant-init` 로그에서 `kb_accidents`, `kb_guides`와 payload index가 생성/확인됐는지 확인한다. 이 서비스는 성공 후 종료되는 것이 정상이다.
+- AI `/health`, embedding `/ready`, ingest `/ready` 응답을 확인한다.
+- Compose 내부 연결은 `database-mysql-server:3306`, `qdrant-server:6333`, `python-embedding-model:60110`을 사용한다.
+- 이미지 재생성은 named volume 데이터를 삭제하지 않는다. `docker compose down -v`는 MySQL/Qdrant 데이터까지 삭제하므로 사용 전 반드시 확인한다.
+
+2026-11-09 확인 결과:
+
+- Compose 설정 검증과 `kb-ingest`, `python-embedding-model`, `qdrant-init` 이미지 빌드가 통과했다.
+- ingest/RAG/config 테스트 47개와 embedding API 테스트 22개가 통과했다.
+- 로컬 MySQL·임베딩 API·Qdrant 연동으로 문서 등록, point 색인, `EMBEDDED` 상태를 확인한 후 테스트 데이터를 정리했다.
